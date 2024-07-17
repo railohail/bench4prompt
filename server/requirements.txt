@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+motor
+pydantic
+jieba
+nltk
+scikit-learn
+spacy==3.5.3
+https://github.com/explosion/spacy-models/releases/download/zh_core_web_sm-3.5.0/zh_core_web_sm-3.5.0-py3-none-any.whl
+pymongo 
+python-jose[cryptography] 
+passlib[bcrypt] 
+python-multipar
+python-dotenv
