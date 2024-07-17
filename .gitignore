@@ -1,3 +1,4 @@
 test/
 server/__pycache__
 node_moduels/
+.DS_Store
