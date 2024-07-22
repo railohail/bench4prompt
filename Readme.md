@@ -31,7 +31,7 @@ This multi-faceted approach ensures a comprehensive evaluation of content, fluen
 -  QuestionModel: Represents a question with its prompt and reference answer.
 -  AnswerInput: Represents a user's submitted answer.
 -  EvaluationResult: Contains the calculated metrics for a submitted answer.
--  aderboardEntry: Represents an entry in the leaderboard with score and metadata.
+-  LeaderboardEntry: Represents an entry in the leaderboard with score and metadata.
 
 ## API Endpoints
 
