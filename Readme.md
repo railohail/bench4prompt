@@ -38,7 +38,7 @@ This multi-faceted approach ensures a comprehensive evaluation of content, fluen
 -  GET <mark>/questions</mark>: Returns the list of available questions.
 -  POST <mark>/evaluate</mark>: Accepts a user's answer and returns evaluation metrics.
 -  GET <mark>/leaderboard</mark>: Returns the current leaderboard data.
-## setup
+## Setup
 after going into the server folder and downloading the requirements
 
 ```
