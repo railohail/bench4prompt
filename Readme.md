@@ -39,20 +39,19 @@ This multi-faceted approach ensures a comprehensive evaluation of content, fluen
 -  POST <mark>/evaluate</mark>: Accepts a user's answer and returns evaluation metrics.
 -  GET <mark>/leaderboard</mark>: Returns the current leaderboard data.
 ## Setup
-after going into the server folder and downloading the requirements
+after going into the <mark>server</mark> folder and downloading the requirements
 
 ```
 pip install -r requirments
 ```
 
-to the Bench4Prompt folder type
+from the root folder (Bench4Prompt folder) activate the server
 
 ```
 uvicorn server.main:app --reload
 ```
 
-to activate thte server
-and then go to the bench folder and type
+and then go to the <mark>bench</mark> folder and activate the frontend 
 
 ```
 npm install
