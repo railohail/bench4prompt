@@ -25,6 +25,8 @@ class LeaderboardEntry(BaseModel):
     score: float
     question_id: str
     timestamp: datetime
+    is_highest: bool
+    is_newest: bool
 
 questions: Dict[str, QuestionModel] = {}
 leaderboard: List[LeaderboardEntry] = []

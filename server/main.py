@@ -8,7 +8,7 @@ from typing import List, Dict
 from datetime import datetime
 
 questions: Dict[str, QuestionModel] = {}
-leaderboard: Dict[str, Dict[str, LeaderboardEntry]] = {}  # Changed to nested dict
+leaderboard: Dict[str, Dict[str, List[LeaderboardEntry]]] = {}  # Changed to store a list of entries
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -52,16 +52,35 @@ async def evaluate_student_answer(answer_input: AnswerInput):
         if answer_input.question_id not in leaderboard:
             leaderboard[answer_input.question_id] = {}
         
-        current_entry = leaderboard[answer_input.question_id].get(answer_input.username)
+        if answer_input.username not in leaderboard[answer_input.question_id]:
+            leaderboard[answer_input.question_id][answer_input.username] = []
         
-        if current_entry is None or evaluation_result.score > current_entry.score:
-            leaderboard_entry = LeaderboardEntry(
-                username=answer_input.username,
-                score=evaluation_result.score,
-                question_id=answer_input.question_id,
-                timestamp=datetime.now()
-            )
-            leaderboard[answer_input.question_id][answer_input.username] = leaderboard_entry
+        user_entries = leaderboard[answer_input.question_id][answer_input.username]
+        
+        new_entry = LeaderboardEntry(
+            username=answer_input.username,
+            score=evaluation_result.score,
+            question_id=answer_input.question_id,
+            timestamp=datetime.now(),
+            is_highest=False,
+            is_newest=True
+        )
+        
+        # Update highest and newest flags
+        if not user_entries or evaluation_result.score > max(entry.score for entry in user_entries):
+            new_entry.is_highest = True
+            for entry in user_entries:
+                entry.is_highest = False
+                entry.is_newest = False
+        else:
+            for entry in user_entries:
+                entry.is_newest = False
+        
+        user_entries.append(new_entry)
+        
+        # Keep only the top 2 entries
+        user_entries.sort(key=lambda x: (-x.score, x.timestamp), reverse=True)
+        leaderboard[answer_input.question_id][answer_input.username] = user_entries[:2]
         
         return evaluation_result
     except Exception as e:
@@ -69,7 +88,11 @@ async def evaluate_student_answer(answer_input: AnswerInput):
 
 @app.get("/leaderboard", response_model=List[LeaderboardEntry])
 async def get_leaderboard():
-    # Flatten the nested dictionary and sort by score
-    all_entries = [entry for question_entries in leaderboard.values() for entry in question_entries.values()]
-    sorted_entries = sorted(all_entries, key=lambda x: x.score, reverse=True)
+    all_entries = []
+    for question_entries in leaderboard.values():
+        for user_entries in question_entries.values():
+            all_entries.extend(user_entries)
+    
+    sorted_entries = sorted(all_entries, key=lambda x: (-x.score, x.timestamp))
     return sorted_entries
+
