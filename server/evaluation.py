@@ -3,6 +3,7 @@ import jieba
 from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from bert_score import score
 
 # Initialize jieba
 jieba.initialize()
@@ -55,29 +56,32 @@ def calculate_rouge_l(reference, candidate):
     f1 = 2 * recall * precision / (recall + precision)
     return f1
 
+def calculate_bertscore(reference, candidate):
+    P, R, F1 = score([candidate], [reference], lang="zh")
+    return F1.item()  # Return the F1 score
 
 def evaluate_student_output(prompt, chatgpt_output, student_output):
-  
     student_evaluation = evaluate_answer(prompt, chatgpt_output, student_output)
-    #additional calculations if wanted 
     return student_evaluation
 
 def evaluate_answer(prompt, chatgpt_output, answer):
     tfidf_sim = calculate_tfidf_similarity(chatgpt_output, answer)
     bleu_score = calculate_bleu(chatgpt_output, answer)
     rouge_l_score = calculate_rouge_l(chatgpt_output, answer)
+    bertscore = calculate_bertscore(chatgpt_output, answer)
     prompt_relevance_chatgpt = calculate_tfidf_similarity(prompt, chatgpt_output)
     prompt_relevance_answer = calculate_tfidf_similarity(prompt, answer)
     relevance_ratio = prompt_relevance_answer / prompt_relevance_chatgpt if prompt_relevance_chatgpt > 0 else 0
 
     weights = {
-        'tfidf': 0.3, 'bleu': 0.3, 'rouge': 0.2, 'relevance': 0.2
+        'tfidf': 0.20, 'bleu': 0.1, 'rouge': 0.1, 'bertscore': 0.35, 'relevance': 0.25
     }
 
     score = (
         tfidf_sim * weights['tfidf'] +
         bleu_score * weights['bleu'] +
         rouge_l_score * weights['rouge'] +
+        bertscore * weights['bertscore'] +
         relevance_ratio * weights['relevance']
     ) * 100
 
@@ -86,6 +90,7 @@ def evaluate_answer(prompt, chatgpt_output, answer):
         'tfidf_similarity': tfidf_sim,
         'bleu_score': bleu_score,
         'rouge_l_score': rouge_l_score,
+        'bertscore': bertscore,
         'prompt_relevance_ratio': relevance_ratio
     }
 

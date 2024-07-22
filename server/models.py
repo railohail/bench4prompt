@@ -17,7 +17,9 @@ class EvaluationResult(BaseModel):
     tfidf_similarity: float
     bleu_score: float
     rouge_l_score: float
+    bertscore:float
     prompt_relevance_ratio: float
+    # bertscore:float
 class LeaderboardEntry(BaseModel):
     username: str
     score: float

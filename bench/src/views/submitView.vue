@@ -64,7 +64,8 @@
           <template #body="slotProps">
             <span>
               {{ slotProps.data.score.toFixed(2) }}
-              <Tag v-if="isLatestEntry(slotProps.data)" value="New" severity="success"></Tag>
+              <Tag v-if="slotProps.data.isHighest" value="Highest" severity="success"></Tag>
+              <Tag v-if="slotProps.data.isNewest" value="Newest" severity="info"></Tag>
             </span>
           </template>
         </Column>
@@ -116,8 +117,11 @@ import Tag from 'primevue/tag'
 import MultiSelect from 'primevue/multiselect'
 import Textarea from 'primevue/textarea'
 import Drawer from 'primevue/drawer'
+import ToggleSwitch from 'primevue/toggleswitch'
+
 const visible = ref(false)
 const darkOrNot = ref(true)
+
 interface Question {
   id: string
   prompt: string
@@ -136,6 +140,8 @@ interface LeaderboardEntry {
   score: number
   question_id: string
   timestamp: string
+  isHighest: boolean
+  isNewest: boolean
 }
 
 const questions = ref<Question[]>([])
@@ -146,9 +152,7 @@ const evaluationResult = ref<EvaluationResult | null>(null)
 const error = ref<string | null>(null)
 const loading = ref(false)
 const leaderboard = ref<LeaderboardEntry[]>([])
-const latestEntryTimestamp = ref<Date | null>(null)
 const filters = ref({})
-import ToggleSwitch from 'primevue/toggleswitch'
 
 const isDarkMode = ref(true)
 const toggleColorScheme = () => {
@@ -158,6 +162,7 @@ const toggleColorScheme = () => {
     element.classList.toggle('my-app-dark', isDarkMode.value)
   }
 }
+
 const fetchQuestions = async () => {
   error.value = null
   loading.value = true
@@ -195,13 +200,66 @@ const submitAnswer = async () => {
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
-    evaluationResult.value = await response.json()
-    fetchLeaderboard()
+
+    const result = await response.json()
+    evaluationResult.value = result
+    if (result) {
+      updateLeaderboard(result)
+    }
   } catch (e) {
     console.error('Error submitting answer:', e)
     error.value = 'Failed to submit answer. Please try again later.'
   } finally {
     loading.value = false
+  }
+}
+
+const updateLeaderboard = (newEntry: EvaluationResult) => {
+  const existingEntryIndex = leaderboard.value.findIndex(
+    (entry) => entry.username === username.value && entry.question_id === selectedQuestion.value!.id
+  )
+
+  if (existingEntryIndex !== -1) {
+    // Update existing entry
+    const existingEntry = leaderboard.value[existingEntryIndex]
+    if (newEntry.score > existingEntry.score) {
+      // New highest score
+      existingEntry.score = newEntry.score
+      existingEntry.timestamp = new Date().toISOString()
+      existingEntry.isHighest = true
+      existingEntry.isNewest = true
+    } else {
+      // New score is not the highest
+      leaderboard.value.push({
+        username: username.value,
+        score: newEntry.score,
+        question_id: selectedQuestion.value!.id,
+        timestamp: new Date().toISOString(),
+        isHighest: false,
+        isNewest: true
+      })
+      existingEntry.isNewest = false
+    }
+  } else {
+    // New entry
+    leaderboard.value.push({
+      username: username.value,
+      score: newEntry.score,
+      question_id: selectedQuestion.value!.id,
+      timestamp: new Date().toISOString(),
+      isHighest: true,
+      isNewest: true
+    })
+  }
+
+  // Ensure only two entries per user per question
+  const userQuestionEntries = leaderboard.value.filter(
+    (entry) => entry.username === username.value && entry.question_id === selectedQuestion.value!.id
+  )
+  if (userQuestionEntries.length > 2) {
+    const sortedEntries = userQuestionEntries.sort((a, b) => b.score - a.score)
+    const indexToRemove = leaderboard.value.findIndex((entry) => entry === sortedEntries[2])
+    leaderboard.value.splice(indexToRemove, 1)
   }
 }
 
@@ -211,19 +269,41 @@ const fetchLeaderboard = async () => {
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
-    leaderboard.value = await response.json()
-    if (leaderboard.value.length > 0) {
-      const timestamps = leaderboard.value.map((entry) => new Date(entry.timestamp))
-      latestEntryTimestamp.value = new Date(Math.max.apply(null, timestamps))
-    }
+    const fetchedLeaderboard = await response.json()
+    leaderboard.value = processLeaderboard(fetchedLeaderboard)
   } catch (e) {
     console.error('Error fetching leaderboard:', e)
   }
 }
 
-const isLatestEntry = (entry: LeaderboardEntry) => {
-  const entryDate = new Date(entry.timestamp)
-  return latestEntryTimestamp.value && entryDate.getTime() === latestEntryTimestamp.value.getTime()
+const processLeaderboard = (fetchedLeaderboard: LeaderboardEntry[]) => {
+  const processedLeaderboard: LeaderboardEntry[] = []
+  const userQuestionMap = new Map<string, LeaderboardEntry[]>()
+
+  for (const entry of fetchedLeaderboard) {
+    const key = `${entry.username}-${entry.question_id}`
+    if (!userQuestionMap.has(key)) {
+      userQuestionMap.set(key, [])
+    }
+    userQuestionMap.get(key)!.push(entry)
+  }
+
+  for (const entries of userQuestionMap.values()) {
+    entries.sort((a, b) => b.score - a.score)
+    const highest = entries[0]
+    highest.isHighest = true
+    highest.isNewest = entries.length === 1
+    processedLeaderboard.push(highest)
+
+    if (entries.length > 1) {
+      const newest = entries[1]
+      newest.isHighest = false
+      newest.isNewest = true
+      processedLeaderboard.push(newest)
+    }
+  }
+
+  return processedLeaderboard
 }
 
 const sortedLeaderboard = computed(() => {
