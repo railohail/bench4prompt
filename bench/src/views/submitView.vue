@@ -133,6 +133,7 @@ interface EvaluationResult {
   bleu_score: number
   rouge_l_score: number
   prompt_relevance_ratio: number
+  gpt_score: number // Added GPT score
 }
 
 interface LeaderboardEntry {
@@ -215,13 +216,23 @@ const submitAnswer = async () => {
 }
 
 const updateLeaderboard = (newEntry: EvaluationResult) => {
-  const existingEntryIndex = leaderboard.value.findIndex(
+  const userQuestionEntries = leaderboard.value.filter(
     (entry) => entry.username === username.value && entry.question_id === selectedQuestion.value!.id
   )
 
-  if (existingEntryIndex !== -1) {
-    // Update existing entry
-    const existingEntry = leaderboard.value[existingEntryIndex]
+  if (userQuestionEntries.length === 0) {
+    // New entry for this user and question
+    leaderboard.value.push({
+      username: username.value,
+      score: newEntry.score,
+      question_id: selectedQuestion.value!.id,
+      timestamp: new Date().toISOString(),
+      isHighest: true,
+      isNewest: true
+    })
+  } else if (userQuestionEntries.length === 1) {
+    // One existing entry
+    const existingEntry = userQuestionEntries[0]
     if (newEntry.score > existingEntry.score) {
       // New highest score
       existingEntry.score = newEntry.score
@@ -229,7 +240,7 @@ const updateLeaderboard = (newEntry: EvaluationResult) => {
       existingEntry.isHighest = true
       existingEntry.isNewest = true
     } else {
-      // New score is not the highest
+      // New score is not the highest, add as newest
       leaderboard.value.push({
         username: username.value,
         score: newEntry.score,
@@ -241,23 +252,38 @@ const updateLeaderboard = (newEntry: EvaluationResult) => {
       existingEntry.isNewest = false
     }
   } else {
-    // New entry
-    leaderboard.value.push({
-      username: username.value,
-      score: newEntry.score,
-      question_id: selectedQuestion.value!.id,
-      timestamp: new Date().toISOString(),
-      isHighest: true,
-      isNewest: true
-    })
+    // Two existing entries
+    userQuestionEntries.sort((a, b) => b.score - a.score)
+    const [highest, newest] = userQuestionEntries
+
+    if (newEntry.score > highest.score) {
+      // New highest score
+      newest.isNewest = false
+      highest.isNewest = true
+      highest.isHighest = false
+      leaderboard.value.push({
+        username: username.value,
+        score: newEntry.score,
+        question_id: selectedQuestion.value!.id,
+        timestamp: new Date().toISOString(),
+        isHighest: true,
+        isNewest: true
+      })
+    } else {
+      // Update newest entry
+      newest.score = newEntry.score
+      newest.timestamp = new Date().toISOString()
+      newest.isNewest = true
+      highest.isNewest = false
+    }
   }
 
   // Ensure only two entries per user per question
-  const userQuestionEntries = leaderboard.value.filter(
+  const updatedUserQuestionEntries = leaderboard.value.filter(
     (entry) => entry.username === username.value && entry.question_id === selectedQuestion.value!.id
   )
-  if (userQuestionEntries.length > 2) {
-    const sortedEntries = userQuestionEntries.sort((a, b) => b.score - a.score)
+  if (updatedUserQuestionEntries.length > 2) {
+    const sortedEntries = updatedUserQuestionEntries.sort((a, b) => b.score - a.score)
     const indexToRemove = leaderboard.value.findIndex((entry) => entry === sortedEntries[2])
     leaderboard.value.splice(indexToRemove, 1)
   }

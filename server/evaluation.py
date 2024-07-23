@@ -4,7 +4,12 @@ from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from bert_score import score
-
+from openai import OpenAI
+from typing import List, Tuple
+import os 
+from dotenv import load_dotenv
+#load env file 
+load_dotenv()
 # Initialize jieba
 jieba.initialize()
 
@@ -71,10 +76,11 @@ def evaluate_answer(prompt, chatgpt_output, answer):
     bertscore = calculate_bertscore(chatgpt_output, answer)
     prompt_relevance_chatgpt = calculate_tfidf_similarity(prompt, chatgpt_output)
     prompt_relevance_answer = calculate_tfidf_similarity(prompt, answer)
+    chatgpt_score = calculate_tfidf_similarity(chatgpt_output, answer)
     relevance_ratio = prompt_relevance_answer / prompt_relevance_chatgpt if prompt_relevance_chatgpt > 0 else 0
 
     weights = {
-        'tfidf': 0.20, 'bleu': 0.1, 'rouge': 0.1, 'bertscore': 0.35, 'relevance': 0.25
+        'tfidf': 0.2, 'bleu': 0.1, 'rouge': 0.1, 'bertscore': 0.15, 'relevance': 0.01,'chatgpt_score':0.5
     }
 
     score = (
@@ -82,7 +88,8 @@ def evaluate_answer(prompt, chatgpt_output, answer):
         bleu_score * weights['bleu'] +
         rouge_l_score * weights['rouge'] +
         bertscore * weights['bertscore'] +
-        relevance_ratio * weights['relevance']
+        relevance_ratio * weights['relevance']+
+        chatgpt_score * weights['chatgpt_score']
     ) * 100
 
     return {
@@ -91,8 +98,54 @@ def evaluate_answer(prompt, chatgpt_output, answer):
         'bleu_score': bleu_score,
         'rouge_l_score': rouge_l_score,
         'bertscore': bertscore,
-        'prompt_relevance_ratio': relevance_ratio
+        'prompt_relevance_ratio': relevance_ratio,
+        'chatgpt_score':chatgpt_score,
     }
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+def calculate_gpt_score(reference: str, answer: str) -> float:
+    try:
+        prompt = f"""
+        你是一個負責評估學生答案的AI助手。
+
+        參考答案：{reference}
+        學生答案：{answer}
+
+        請根據以下標準評估學生的答案：
+        1. 資訊的正確性
+        2. 答案的完整性
+        3. 表述的清晰度和連貫性
+        4. 與參考答案的相關性
+
+        請提供一個0到1之間的分數，其中1表示與參考答案完全匹配，0表示完全不正確或不相關。
+
+        你的回答應該按以下格式：
+        分數：[你給出的0到1之間的分數]
+        解釋：[對你的評分的簡要解釋]
+        """
+
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "你是一個評估學生答案的AI助手。"},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=150,
+            n=1,
+            stop=None,
+            temperature=0.5,
+        )
+
+        # Extract the score from the response
+        result = response.choices[0].message.content.strip()
+        score_line = [line for line in result.split('\n') if line.startswith('分數：')][0]
+        score = float(score_line.split('：')[1].strip())
+
+        return score
+
+    except Exception as e:
+        print(f"計算GPT分數時出錯：{str(e)}")
+        return 0.0  # 如果出現任何錯誤，返回0分
 
 # Utility function to load questions from JSON
 def load_questions_from_json(file_path):

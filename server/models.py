@@ -19,6 +19,7 @@ class EvaluationResult(BaseModel):
     rouge_l_score: float
     bertscore:float
     prompt_relevance_ratio: float
+    chatgpt_score:float
     # bertscore:float
 class LeaderboardEntry(BaseModel):
     username: str
