@@ -80,7 +80,7 @@ def evaluate_answer(prompt, chatgpt_output, answer):
     relevance_ratio = prompt_relevance_answer / prompt_relevance_chatgpt if prompt_relevance_chatgpt > 0 else 0
 
     weights = {
-        'tfidf': 0.2, 'bleu': 0.1, 'rouge': 0.1, 'bertscore': 0.15, 'relevance': 0.01,'chatgpt_score':0.5
+        'tfidf': 0.14, 'bleu': 0.1, 'rouge': 0.1, 'bertscore': 0.15, 'relevance': 0.01,'chatgpt_score':0.5
     }
 
     score = (

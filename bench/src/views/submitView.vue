@@ -28,7 +28,18 @@
               optionLabel="prompt"
               placeholder="選擇回答的問題"
               class="w-full mb-3"
-            />
+            >
+              <template #value="slotProps">
+                <div class="question-option">
+                  {{ slotProps.value ? cropText(slotProps.value.prompt) : '選擇回答的問題' }}
+                </div>
+              </template>
+              <template #option="slotProps">
+                <div class="question-option">
+                  {{ cropText(slotProps.option.prompt) }}
+                </div>
+              </template>
+            </Select>
             <Button outlined @click="copySelectedQuestion" :disabled="!selectedQuestion">
               <span v-if="!copied">複製題目</span>
               <span v-else>Copied!</span>
@@ -94,12 +105,12 @@
               :maxSelectedLabels="3"
             >
               <template #option="slotProps">
-                <span>{{ slotProps.option.prompt }}</span>
+                <span>{{ cropText(slotProps.option.prompt) }}</span>
               </template>
             </MultiSelect>
           </template>
           <template #body="slotProps">
-            {{ getQuestionPrompt(slotProps.data.question_id) }}
+            {{ cropText(getQuestionPrompt(slotProps.data.question_id)) }}
           </template>
         </Column>
         <Column field="timestamp" header="Timestamp" :sortable="true">
@@ -127,6 +138,7 @@ import Drawer from 'primevue/drawer'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { useClipboard } from '@vueuse/core'
 import { config } from '@/config'
+
 const { copy, copied } = useClipboard()
 const copySelectedQuestion = () => {
   if (selectedQuestion.value) {
@@ -147,7 +159,7 @@ interface EvaluationResult {
   bleu_score: number
   rouge_l_score: number
   prompt_relevance_ratio: number
-  gpt_score: number // Added GPT score
+  gpt_score: number
 }
 
 interface LeaderboardEntry {
@@ -177,6 +189,13 @@ const toggleColorScheme = () => {
   if (element) {
     element.classList.toggle('my-app-dark', isDarkMode.value)
   }
+}
+
+const cropText = (text: string, charLimit: number = 20): string => {
+  if (text.length <= charLimit) {
+    return text
+  }
+  return text.slice(0, charLimit) + '...'
 }
 
 const fetchQuestions = async () => {
@@ -352,10 +371,13 @@ const sortedLeaderboard = computed(() => {
 })
 
 const questionOptions = computed(() => {
-  return questions.value.map((q) => ({ id: q.id, prompt: q.prompt }))
+  return questions.value.map((q) => ({
+    id: q.id,
+    prompt: cropText(q.prompt) // Apply cropping here
+  }))
 })
 
-const getQuestionPrompt = (questionId: string) => {
+const getQuestionPrompt = (questionId: string): string => {
   const question = questions.value.find((q) => q.id === questionId)
   return question ? question.prompt : questionId
 }

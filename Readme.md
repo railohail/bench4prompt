@@ -47,6 +47,8 @@ This multi-faceted approach ensures a comprehensive evaluation of content, fluen
 
 ## Setup
 
+must add an OPENAI_API_KEY to the.env file in the root folder
+
 after going into the <mark>server</mark> folder and downloading the requirements
 
 ```
