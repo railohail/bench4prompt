@@ -76,7 +76,7 @@ def evaluate_answer(prompt, chatgpt_output, answer):
     bertscore = calculate_bertscore(chatgpt_output, answer)
     prompt_relevance_chatgpt = calculate_tfidf_similarity(prompt, chatgpt_output)
     prompt_relevance_answer = calculate_tfidf_similarity(prompt, answer)
-    chatgpt_score = calculate_tfidf_similarity(chatgpt_output, answer)
+    chatgpt_score = calculate_gpt_score(prompt,chatgpt_output, answer)
     relevance_ratio = prompt_relevance_answer / prompt_relevance_chatgpt if prompt_relevance_chatgpt > 0 else 0
 
     weights = {
@@ -103,11 +103,11 @@ def evaluate_answer(prompt, chatgpt_output, answer):
     }
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-def calculate_gpt_score(reference: str, answer: str) -> float:
+def calculate_gpt_score(ref_prompt:str,reference: str, answer: str) -> float:
     try:
         prompt = f"""
         你是一個負責評估學生答案的AI助手。
-
+        題目：{ref_prompt}
         參考答案：{reference}
         學生答案：{answer}
 
@@ -116,6 +116,8 @@ def calculate_gpt_score(reference: str, answer: str) -> float:
         2. 答案的完整性
         3. 表述的清晰度和連貫性
         4. 與參考答案的相關性
+        5. 是否有鑽漏洞的嫌疑例如：因為題目出現過的名詞所以硬要用到該名詞
+        6. 如果直接照抄題目 應該扣點分數
 
         請提供一個0到1之間的分數，其中1表示與參考答案完全匹配，0表示完全不正確或不相關。
 
