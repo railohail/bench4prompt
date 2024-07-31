@@ -19,14 +19,21 @@
               </div>
             </Drawer>
           </div>
-          <Button outlined label="詳細" icon="pi pi-bars" @click="visible = true" />
-          <Select
-            v-model="selectedQuestion"
-            :options="questions"
-            optionLabel="prompt"
-            placeholder="選擇回答的問題"
-            class="w-full mb-3"
-          />
+          <div>
+            <Button outlined label="詳細" icon="pi pi-bars" @click="visible = true" />
+
+            <Select
+              v-model="selectedQuestion"
+              :options="questions"
+              optionLabel="prompt"
+              placeholder="選擇回答的問題"
+              class="w-full mb-3"
+            />
+            <Button outlined @click="copySelectedQuestion" :disabled="!selectedQuestion">
+              <span v-if="!copied">複製題目</span>
+              <span v-else>Copied!</span>
+            </Button>
+          </div>
           <InputText v-model="username" placeholder="名字" size="large" class="w-full mb-4" />
 
           <Button
@@ -118,7 +125,14 @@ import MultiSelect from 'primevue/multiselect'
 import Textarea from 'primevue/textarea'
 import Drawer from 'primevue/drawer'
 import ToggleSwitch from 'primevue/toggleswitch'
-
+import { useClipboard } from '@vueuse/core'
+import { config } from '@/config'
+const { copy, copied } = useClipboard()
+const copySelectedQuestion = () => {
+  if (selectedQuestion.value) {
+    copy(selectedQuestion.value.prompt)
+  }
+}
 const visible = ref(false)
 const darkOrNot = ref(true)
 
@@ -147,6 +161,7 @@ interface LeaderboardEntry {
 
 const questions = ref<Question[]>([])
 const selectedQuestion = ref<Question | null>(null)
+
 const username = ref('')
 const studentAnswer = ref('')
 const evaluationResult = ref<EvaluationResult | null>(null)
@@ -168,7 +183,7 @@ const fetchQuestions = async () => {
   error.value = null
   loading.value = true
   try {
-    const response = await fetch('http://localhost:8000/questions')
+    const response = await fetch(`${config.apiUrl}/questions`)
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
@@ -187,7 +202,7 @@ const submitAnswer = async () => {
   error.value = null
   loading.value = true
   try {
-    const response = await fetch('http://localhost:8000/evaluate', {
+    const response = await fetch(`${config.apiUrl}/evaluate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -291,7 +306,7 @@ const updateLeaderboard = (newEntry: EvaluationResult) => {
 
 const fetchLeaderboard = async () => {
   try {
-    const response = await fetch('http://localhost:8000/leaderboard')
+    const response = await fetch(`${config.apiUrl}/leaderboard`)
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
