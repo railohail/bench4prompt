@@ -80,7 +80,7 @@ def evaluate_answer(prompt, chatgpt_output, answer):
     relevance_ratio = prompt_relevance_answer / prompt_relevance_chatgpt if prompt_relevance_chatgpt > 0 else 0
 
     weights = {
-        'tfidf': 0.14, 'bleu': 0.1, 'rouge': 0.1, 'bertscore': 0.15, 'relevance': 0.01,'chatgpt_score':0.5
+        'tfidf': 0.1, 'bleu': 0.1, 'rouge': 0.1, 'bertscore': 0.15, 'relevance': 0.01,'chatgpt_score':0.54
     }
 
     score = (
@@ -106,7 +106,7 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 def calculate_gpt_score(ref_prompt:str,reference: str, answer: str) -> float:
     try:
         prompt = f"""
-        你是一個負責評估學生答案的AI助手。
+        你是一個負責評估學生答案的AI。
         題目：{ref_prompt}
         參考答案：{reference}
         學生答案：{answer}
@@ -117,7 +117,10 @@ def calculate_gpt_score(ref_prompt:str,reference: str, answer: str) -> float:
         3. 表述的清晰度和連貫性
         4. 與參考答案的相關性
         5. 是否有鑽漏洞的嫌疑例如：因為題目出現過的名詞所以硬要用到該名詞
-        6. 如果直接照抄題目 應該扣點分數
+        6. 如果直接照抄題目 應該扣分數
+        7. 學生如果看起來是隨便回答名詞不要給太高分數（例如問明朝的問題就只回答明朝的名詞走漏洞）   
+        8. 整個答案沒有意義例如
+        9. 如果符合5,6,7,8把分數調道低於1
 
         請提供一個0到1之間的分數，其中1表示與參考答案完全匹配，0表示完全不正確或不相關。
 
