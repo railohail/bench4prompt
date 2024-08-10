@@ -14,3 +14,4 @@ python-multipar
 python-dotenv
 bert_score
 openai
+openpyxl

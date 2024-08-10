@@ -4,3 +4,5 @@ node_moduels/
 .DS_Store
 .env
 leaderboard.json
+average_scores.json
+平均分數.xlsx

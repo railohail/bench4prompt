@@ -30,7 +30,7 @@ class DateTimeEncoder(json.JSONEncoder):
 def save_leaderboard():
     try:
         with open(LEADERBOARD_FILE, "w") as f:
-            json.dump(leaderboard, f, cls=DateTimeEncoder)
+            json.dump(leaderboard, f, cls=DateTimeEncoder,indent=2)
         logger.info("Leaderboard saved successfully")
     except Exception as e:
         logger.error(f"Error saving leaderboard: {str(e)}")
