@@ -70,7 +70,7 @@ npm install
 npm run dev
 ```
 
-for calculations for average score of each class you use calculate.py
+for calculations for average score of each class you use calculate.py(the required package is installed in requirements.txt in the server folder)
 
 ```
 python calculate.py
