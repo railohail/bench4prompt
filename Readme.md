@@ -22,6 +22,8 @@ The system evaluates user responses using multiple metrics:
 
 5. **Prompt Relevance**
    - Compares answer relevance to the original prompt
+6. **GPT-score**
+   - evaluates the prompt, answer and the students answer in multiple aspects including the meaning and completeness of the student answer
 
 ## Process
 
@@ -67,3 +69,11 @@ and then go to the <mark>bench</mark> folder and activate the frontend
 npm install
 npm run dev
 ```
+
+for calculations for average score of each class you use calculate.py
+
+```
+python calculate.py
+```
+
+there will be a file named average_scores.json with details and 平均分數.xlsx as an excel with **only average scores**
