@@ -47,13 +47,13 @@ def create_excel_report(data):
     ws = wb.active
     ws.title = "平均分數"
     
-    ws['A1'] = "用戶名"
+    ws['A1'] = "組別"
     ws['B1'] = "平均分數"
     
     row = 2
     for username, user_data in data.items():
         ws[f'A{row}'] = username
-        ws[f'B{row}'] = user_data['average_total']
+        ws[f'B{row}'] = f"{user_data['average_total']:.1f}"
         row += 1
     
     wb.save("平均分數.xlsx")
