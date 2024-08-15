@@ -1,13 +1,9 @@
 <template>
   <div class="leaderboard">
     <h2 class="text-2xl font-bold mb-4">Average Leaderboard</h2>
-
-    <!-- Line Chart for Score Distribution -->
     <div class="mb-6">
       <Chart type="line" :data="chartData" :options="chartOptions" class="h-64" />
     </div>
-
-    <!-- DataTable -->
     <DataTable
       :value="leaderboardArray"
       :paginator="true"

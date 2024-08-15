@@ -1,5 +1,7 @@
 # Prompt Evaluation System
 
+![alt text](img/submit.png)
+
 ## Evaluation Process
 
 The system evaluates user responses using multiple metrics:
@@ -70,10 +72,7 @@ npm install
 npm run dev
 ```
 
-for calculations for average score of each class you use calculate.py(the required package is installed in requirements.txt in the server folder)
+# Result
 
-```
-python calculate.py
-```
-
-there will be a file named average_scores.json with details and 平均分數.xlsx as an excel with **only average scores**
+you can find the Results in the /result page
+![alt text](img/result.png)
