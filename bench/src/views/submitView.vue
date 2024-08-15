@@ -1,11 +1,9 @@
 <template>
   <div>
-    <h1 class="italic">Prompt Evaluation</h1>
-    <ToggleSwitch v-model="darkOrNot" label="Toggle Color Scheme" @click="toggleColorScheme()" />
     <div v-if="error">
       {{ error }}
     </div>
-    <div class="flex">
+    <div class="flex mx-2 my-2 p-2 py-0">
       <div class="flex-1 mr-4">
         <div class="card mb-3">
           <div class="card flex justify-center">
@@ -20,7 +18,25 @@
             </Drawer>
           </div>
           <div>
-            <Button outlined label="詳細" icon="pi pi-bars" @click="visible = true" />
+            <div class="flex items-center mb-3">
+              <Button
+                outlined
+                label="詳細"
+                icon="pi pi-bars"
+                @click="visible = true"
+                class="mr-2"
+              />
+              <Button
+                outlined
+                @click="copySelectedQuestion"
+                :disabled="!selectedQuestion"
+                class="mr-2"
+              >
+                <span v-if="!copied">複製題目</span>
+                <span v-else>Copied!</span>
+              </Button>
+              <InputText v-model="username" placeholder="名字" class="p-inputtext-sm w-56" />
+            </div>
 
             <Select
               v-model="selectedQuestion"
@@ -40,12 +56,7 @@
                 </div>
               </template>
             </Select>
-            <Button outlined @click="copySelectedQuestion" :disabled="!selectedQuestion">
-              <span v-if="!copied">複製題目</span>
-              <span v-else>Copied!</span>
-            </Button>
           </div>
-          <InputText v-model="username" placeholder="名字" size="large" class="w-full mb-4" />
 
           <Button
             outlined
@@ -68,8 +79,8 @@
         </div>
       </div>
     </div>
-    <div class="card mt-3">
-      <h2 class="text-red-600">Leaderboard</h2>
+    <div class="card mt-3 mx-1 my-2 p-2 py-0">
+      <h1 class="text-3xl font-bold">Leaderboard</h1>
       <DataTable
         :value="sortedLeaderboard"
         :paginator="true"
@@ -124,7 +135,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import 'primeicons/primeicons.css'
 import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
@@ -135,7 +146,6 @@ import Tag from 'primevue/tag'
 import MultiSelect from 'primevue/multiselect'
 import Textarea from 'primevue/textarea'
 import Drawer from 'primevue/drawer'
-import ToggleSwitch from 'primevue/toggleswitch'
 import { useClipboard } from '@vueuse/core'
 import { config } from '@/config'
 
@@ -146,7 +156,7 @@ const copySelectedQuestion = () => {
   }
 }
 const visible = ref(false)
-const darkOrNot = ref(true)
+// const darkOrNot = ref(true)
 
 interface Question {
   id: string
@@ -182,12 +192,19 @@ const loading = ref(false)
 const leaderboard = ref<LeaderboardEntry[]>([])
 const filters = ref({})
 
-const isDarkMode = ref(true)
-const toggleColorScheme = () => {
-  isDarkMode.value = !isDarkMode.value
-  const element = document.querySelector('html')
-  if (element) {
-    element.classList.toggle('my-app-dark', isDarkMode.value)
+let eventSource: EventSource | null = null
+
+const setupEventSource = () => {
+  eventSource = new EventSource(`${config.apiUrl}/stream`)
+  eventSource.onmessage = (event) => {
+    const data = JSON.parse(event.data)
+    if (data.type === 'update') {
+      fetchLeaderboard()
+    }
+  }
+  eventSource.onerror = (err) => {
+    console.error('EventSource failed:', err)
+    error.value = 'Lost connection to the server. Please refresh the page.'
   }
 }
 
@@ -333,6 +350,7 @@ const fetchLeaderboard = async () => {
     leaderboard.value = processLeaderboard(fetchedLeaderboard)
   } catch (e) {
     console.error('Error fetching leaderboard:', e)
+    error.value = 'Failed to fetch leaderboard. Please try again later.'
   }
 }
 
@@ -389,5 +407,12 @@ const onFilter = (event: any) => {
 onMounted(() => {
   fetchQuestions()
   fetchLeaderboard()
+  setupEventSource()
+})
+
+onUnmounted(() => {
+  if (eventSource) {
+    eventSource.close()
+  }
 })
 </script>
