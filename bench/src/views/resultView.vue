@@ -1,9 +1,12 @@
 <template>
   <div class="leaderboard">
     <h2 class="text-2xl font-bold mb-4">Average Leaderboard</h2>
+
     <div class="mb-6">
       <Chart type="line" :data="chartData" :options="chartOptions" class="h-64" />
     </div>
+    <Button label="下載excel" outlined icon="pi pi-download" @click="downloadExcel" />
+
     <DataTable
       :value="leaderboardArray"
       :paginator="true"
@@ -44,7 +47,7 @@ import { config } from '@/config'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Chart from 'primevue/chart'
-
+import Button from 'primevue/button'
 interface LeaderboardEntry {
   average_score: number
   questions_attempted: number
@@ -154,7 +157,9 @@ const setupEventSource = () => {
     error.value = 'Lost connection to the server. Please refresh the page.'
   }
 }
-
+const downloadExcel = () => {
+  window.open(`${config.apiUrl}/download-excel`, '_blank')
+}
 onMounted(() => {
   fetchData()
   setupEventSource()

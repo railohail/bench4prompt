@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse,FileResponse
 from contextlib import asynccontextmanager
 import json
 import logging
@@ -220,3 +220,10 @@ async def stream(request: Request):
 
     return EventSourceResponse(event_generator())
 
+@app.get("/download-excel")
+async def download_excel():
+    file_path = "平均分數.xlsx"
+    if os.path.exists(file_path):
+        return FileResponse(file_path, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", filename="average_scores.xlsx")
+    else:
+        raise HTTPException(status_code=404, detail="File not found")
